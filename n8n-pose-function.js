@@ -12,7 +12,7 @@ const tf = require('@tensorflow/tfjs');
 const tmPose = require('@teachablemachine/pose');
 
 // Configuration - MODIFY WITH YOUR MODEL URL
-const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/';
+const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/GBxnPP4k3/';
 const METADATA_URL = MODEL_URL + 'metadata.json';
 const MODEL_JSON = MODEL_URL + 'model.json';
 
