@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teachable Machine - Pose Model API</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8"></script>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 50px auto; }
+    canvas { display: block; margin: 20px 0; border: 1px solid #ccc; }
+    #result { padding: 10px; background: #f0f0f0; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>Pose Model - Teachable Machine API</h1>
+  <p>Load your Teachable Machine model URL below:</p>
+  <input type="text" id="modelUrl" placeholder="Paste your model URL here" style="width: 100%; padding: 8px; margin: 10px 0;">
+  <button onclick="initModel()">Load Model</button>
+  <canvas id="canvas"></canvas>
+  <div id="result"></div>
+  
+  <script>
+    let model, webcam, ctx, canvas, maxPredictions;
+    
+    async function initModel() {
+      const modelUrl = document.getElementById('modelUrl').value;
+      if (!modelUrl) {
+        alert('Please enter a model URL');
+        return;
+      }
+      
+      try {
+        const URL = modelUrl;
+        model = await tmPose.load(URL, URL + 'metadata.json');
+        maxPredictions = model.getTotalClasses();
+        
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        
+        // Initialize webcam
+        const size = 200;
+        const flip = true;
+        webcam = new tmPose.Webcam(size, size, flip);
+        await webcam.setup();
+        await webcam.play();
+        
+        canvas.width = size;
+        canvas.height = size;
+        
+        loop();
+      } catch (e) {
+        alert('Error loading model: ' + e.message);
+        console.error(e);
+      }
+    }
+    
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+    
+    async function predict() {
+      const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+      const prediction = await model.predict(posenetOutput);
+      
+      // Draw webcam frame
+      ctx.drawImage(webcam.canvas, 0, 0);
+      
+      // Get top prediction
+      let maxScore = 0;
+      let maxClass = '';
+      for (let i = 0; i < maxPredictions; i++) {
+        if (prediction[i].probability > maxScore) {
+          maxScore = prediction[i].probability;
+          maxClass = prediction[i].className;
+        }
+      }
+      
+      // Display result
+      let resultHTML = '<strong>Pose Detected: ' + maxClass + '</strong><br>';
+      resultHTML += 'Confidence: ' + (maxScore * 100).toFixed(2) + '%<br>';
+      resultHTML += '<small>All predictions:</small><ul>';
+      for (let i = 0; i < maxPredictions; i++) {
+        resultHTML += '<li>' + prediction[i].className + ': ' + (prediction[i].probability * 100).toFixed(2) + '%</li>';
+      }
+      resultHTML += '</ul>';
+      document.getElementById('result').innerHTML = resultHTML;
+    }
+  </script>
+</body>
+</html>
